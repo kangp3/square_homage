@@ -1,6 +1,6 @@
 use winit::{
     event::*,
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowBuilder},
 };
 
@@ -12,14 +12,20 @@ pub fn run() {
 
     let window = WindowBuilder::new().build(&event_loop).unwrap();
 
-    event_loop.run(move |event, _| handle_event(event));
-
-    //todo
-    //  get instance
-    //  get surface
-    //  display in window
+    event_loop.run(move |event, window| handle_event(event, window));
 }
 
-fn handle_event(event: Event<()>) {
-    print!("Got an event\n")
+fn handle_event(event: Event<()>, window: &EventLoopWindowTarget<()>) {
+    match event {
+        Event::WindowEvent {
+            event: ref window_event,
+            window_id,
+        } => match window_event {
+            WindowEvent::CloseRequested => {
+                window.exit();
+            }
+            _ => {}
+        },
+        _ => {}
+    };
 }
