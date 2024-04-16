@@ -1,13 +1,14 @@
 use std::iter;
+use wgpu::util::DeviceExt;
 use wgpu::{self, Adapter, SurfaceConfiguration};
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowBuilder},
 };
+
 pub async fn run(clear_color: wgpu::Color) {
     env_logger::init();
-
     //BIG TODO: Custom error handling
 
     let event_loop = EventLoop::new().unwrap();
@@ -67,6 +68,52 @@ pub async fn run(clear_color: wgpu::Color) {
         label: Some("Render Encoder"),
     });
 
+    //VERTEX things
+    // These definately will have to get split out somewhere. Too many magic numbers here.
+    // lib.rs
+    #[repr(C)]
+    #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+    struct Vertex {
+        position: [f32; 3],
+        color: [f32; 3],
+    }
+    impl Vertex {
+        const ATTRIBS: [wgpu::VertexAttribute; 2] =
+            wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
+
+        fn desc() -> wgpu::VertexBufferLayout<'static> {
+            //is this a good name?
+            use std::mem;
+
+            wgpu::VertexBufferLayout {
+                array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+                step_mode: wgpu::VertexStepMode::Vertex,
+                attributes: &Self::ATTRIBS,
+            }
+        }
+    }
+
+    const VERTICES: &[Vertex] = &[
+        Vertex {
+            position: [0.0, 0.5, 0.0],
+            color: [1.0, 0.0, 0.0],
+        },
+        Vertex {
+            position: [-0.5, -0.5, 0.0],
+            color: [0.0, 1.0, 0.0],
+        },
+        Vertex {
+            position: [0.5, -0.5, 0.0],
+            color: [0.0, 0.0, 1.0],
+        },
+    ];
+
+    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Vertex Buffer"),
+        contents: bytemuck::cast_slice(VERTICES),
+        usage: wgpu::BufferUsages::VERTEX,
+    });
+
     let output = surface.get_current_texture().unwrap(); //could be a better name
 
     let view = output //is this the viewscreen?
@@ -87,7 +134,7 @@ pub async fn run(clear_color: wgpu::Color) {
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
-            buffers: &[],
+            buffers: &[Vertex::desc()],
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
@@ -140,8 +187,9 @@ pub async fn run(clear_color: wgpu::Color) {
             occlusion_query_set: None,
             timestamp_writes: None,
         });
-        render_pass.set_pipeline(&render_pipeline); // 2.
-        render_pass.draw(0..3, 0..1); // 3.
+        render_pass.set_pipeline(&render_pipeline);
+        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        render_pass.draw(0..3, 0..1);
     }
 
     queue.submit(iter::once(encoder.finish()));
