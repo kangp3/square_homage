@@ -4,7 +4,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-pub fn run() {
+pub async fn run() {
     env_logger::init();
 
     //BIG TODO: Custom error handling
