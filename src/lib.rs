@@ -5,14 +5,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowBuilder},
 };
-pub async fn run() {
-    let temp_color = wgpu::Color {
-        r: 0.0,
-        g: 0.8,
-        b: 0.0,
-        a: 1.0,
-    };
-
+pub async fn run(clear_color: wgpu::Color) {
     env_logger::init();
 
     //BIG TODO: Custom error handling
@@ -87,7 +80,7 @@ pub async fn run() {
                 view: &view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(temp_color),
+                    load: wgpu::LoadOp::Clear(clear_color),
                     store: wgpu::StoreOp::Store,
                 },
             })],
