@@ -1,19 +1,61 @@
 use std::iter;
 use wgpu::util::DeviceExt;
-use wgpu::{self, Adapter, SurfaceConfiguration};
 use winit::{
     event::*,
-    event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
-    window::{Window, WindowBuilder},
+    event_loop::{EventLoop, EventLoopWindowTarget},
+    window::WindowBuilder,
 };
+use log::debug;
+#[cfg(target_arch="wasm32")]
+use wasm_bindgen::prelude::*;
 
-pub async fn run(clear_color: wgpu::Color) {
-    env_logger::init();
+#[cfg_attr(target_arch="wasm32", wasm_bindgen(start))]
+pub async fn run() {
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+            console_log::init_with_level(log::Level::Debug).expect("Couldn't initialize logger");
+        } else {
+            env_logger::init();
+        }
+    }
+
     //BIG TODO: Custom error handling
 
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+
+    let window_builder = if cfg!(target_arch = "wasm32") {
+        // Winit prevents sizing with CSS, so we have to set
+        // the size manually when on web.
+        use winit::dpi::PhysicalSize;
+
+        let size = PhysicalSize::new(450, 400);
+        debug!("SIZE IS: {:#?}", size);
+        WindowBuilder::new().with_min_inner_size(size)
+    } else {
+        debug!("ARE YOU RUNNING");
+        WindowBuilder::new()
+    };
+
+    let window = window_builder.build(&event_loop).unwrap();
+
+    if cfg!(target_arch = "wasm32") {
+        debug!("hello");
+
+        use winit::platform::web::WindowExtWebSys;
+        web_sys::window()
+            .and_then(|win| win.document())
+            .and_then(|doc| {
+                let dst = doc.get_element_by_id("body")?;
+                let canvas = window.canvas().unwrap();
+                dst.append_child(&canvas).ok()?;
+                Some(())
+            })
+            .expect("Couldn't append canvas to document body.");
+    }
+
     let size = window.inner_size();
+    debug!("Size is {:#?}", size);
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
@@ -39,12 +81,13 @@ pub async fn run(clear_color: wgpu::Color) {
         .copied()
         .find(|f| f.is_srgb())
         .unwrap_or(surface_caps.formats[0]);
+
     let config = wgpu::SurfaceConfiguration {
         desired_maximum_frame_latency: 2,
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,
-        width: size.width,
-        height: size.height,
+        width: 450, //size.width,
+        height: 400, //size.height,
         present_mode: surface_caps.present_modes[0],
         alpha_mode: surface_caps.alpha_modes[0],
         view_formats: vec![],
@@ -55,7 +98,7 @@ pub async fn run(clear_color: wgpu::Color) {
             &wgpu::DeviceDescriptor {
                 label: None,
                 required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
+                required_limits: if cfg!(target_arch = "wasm32") { wgpu::Limits::downlevel_webgl2_defaults() } else { wgpu::Limits::default() },
             },
             None,
         )
@@ -196,7 +239,12 @@ pub async fn run(clear_color: wgpu::Color) {
                 view: &view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(clear_color),
+                    load: wgpu::LoadOp::Clear(wgpu::Color{
+                        r: 0.8,
+                        g: 0.8,
+                        b: 0.3,
+                        a: 1.0,
+                    }),
                     store: wgpu::StoreOp::Store,
                 },
             })],
@@ -220,7 +268,7 @@ fn handle_event(event: Event<()>, window: &EventLoopWindowTarget<()>) {
     match event {
         Event::WindowEvent {
             event: ref window_event,
-            window_id,
+            window_id: _,
         } => match window_event {
             WindowEvent::CloseRequested => {
                 window.exit();
