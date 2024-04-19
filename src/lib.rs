@@ -5,6 +5,7 @@ use winit::{
     event_loop::{EventLoop, EventLoopWindowTarget},
     window::WindowBuilder,
 };
+#[allow(unused_imports)]
 use log::debug;
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
@@ -23,39 +24,36 @@ pub async fn run() {
     //BIG TODO: Custom error handling
 
     let event_loop = EventLoop::new().unwrap();
+    let window = WindowBuilder::new().build(&event_loop).unwrap();
 
-    let window_builder = if cfg!(target_arch = "wasm32") {
-        // Winit prevents sizing with CSS, so we have to set
-        // the size manually when on web.
-        use winit::dpi::PhysicalSize;
-
-        let size = PhysicalSize::new(450, 400);
-        debug!("SIZE IS: {:#?}", size);
-        WindowBuilder::new().with_min_inner_size(size)
-    } else {
-        debug!("ARE YOU RUNNING");
-        WindowBuilder::new()
-    };
-
-    let window = window_builder.build(&event_loop).unwrap();
-
-    if cfg!(target_arch = "wasm32") {
-        debug!("hello");
-
-        use winit::platform::web::WindowExtWebSys;
-        web_sys::window()
-            .and_then(|win| win.document())
-            .and_then(|doc| {
-                let dst = doc.get_element_by_id("body")?;
-                let canvas = window.canvas().unwrap();
-                dst.append_child(&canvas).ok()?;
-                Some(())
-            })
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            use winit::platform::web::WindowExtWebSys;
+            let web_window = web_sys::window().unwrap();
+            web_window.document()
+                .and_then(|doc| {
+                    let dst = doc.get_element_by_id("body")?;
+                    let canvas = window.canvas().unwrap();
+                    dst.append_child(&canvas).ok()?;
+                    Some(())
+                })
             .expect("Couldn't append canvas to document body.");
-    }
 
-    let size = window.inner_size();
-    debug!("Size is {:#?}", size);
+            // TODO(peter): For some reason inner_size in web is returning 0, 0 (maybe the size of
+            // the canvas? So instead we get the size of the entire window
+            use winit::dpi::PhysicalSize;
+            let size = {
+                let width = web_window.inner_width().unwrap().as_f64().unwrap() as u32;
+                let height = web_window.inner_height().unwrap().as_f64().unwrap() as u32;
+                PhysicalSize{
+                    width,
+                    height,
+                }
+            };
+        } else {
+            let size = window.inner_size();
+        }
+    }
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
@@ -86,8 +84,8 @@ pub async fn run() {
         desired_maximum_frame_latency: 2,
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,
-        width: 450, //size.width,
-        height: 400, //size.height,
+        width: size.width,
+        height: size.height,
         present_mode: surface_caps.present_modes[0],
         alpha_mode: surface_caps.alpha_modes[0],
         view_formats: vec![],
