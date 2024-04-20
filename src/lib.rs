@@ -55,8 +55,12 @@ pub async fn run() {
             let size = window.inner_size();
         }
     }
-    let aspect_ratio_recip = size.height as f32 / size.width as f32;
-    debug!("aspect ratio: {}", aspect_ratio_recip);
+    let is_wider = size.width > size.height;
+    let aspect_ratio_recip = if is_wider {
+        size.height as f32 / size.width as f32
+    } else {
+        size.width as f32 / size.height as f32
+    };
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
@@ -146,22 +150,26 @@ pub async fn run() {
     let mut vertices = vec![];
     let mut indices: Vec<u16> = vec![];
     for i in 0..4 {
-        let side_len = 0.9 - i as f32 * size_step;
+        let i_f32 = i as f32;
+        let side_len = 0.9 - i_f32 * size_step;
+        let height = if is_wider { side_len } else { side_len * aspect_ratio_recip };
+        let width = if is_wider { side_len * aspect_ratio_recip } else { side_len };
+        let offset = if is_wider { pos_step * i_f32 } else { pos_step * i_f32 * aspect_ratio_recip };
         let color = [rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>()];
         vertices.push(Vertex{
-            position: [-side_len * aspect_ratio_recip, side_len - pos_step * i as f32, size_step * i as f32],
+            position: [-width, height - offset, size_step * i_f32],
             color,
         });
         vertices.push(Vertex{
-            position: [-side_len * aspect_ratio_recip, -side_len - pos_step * i as f32, size_step * i as f32],
+            position: [-width, -height - offset, size_step * i_f32],
             color,
         });
         vertices.push(Vertex{
-            position: [side_len * aspect_ratio_recip, -side_len - pos_step * i as f32, size_step * i as f32],
+            position: [width, -height - offset, size_step * i_f32],
             color,
         });
         vertices.push(Vertex{
-            position: [side_len * aspect_ratio_recip, side_len - pos_step * i as f32, size_step * i as f32],
+            position: [width, height - offset, size_step * i_f32],
             color,
         });
 
