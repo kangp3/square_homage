@@ -13,6 +13,7 @@ tokio = { version = "1.37.0", features = ["rt", "macros"] }
 bytemuck = { version = "1.15", features = ["derive"] }
 log = "0.4.21"
 cfg-if = "1.0.0"
+rand = "0.8.5"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -25,3 +26,4 @@ wasm-bindgen-futures = "0.4.42"
 web-sys = { version = "0.3.69", features = ["Document", "Window", "Element"] }
 wgpu = { version = "0.19.3", features = ["webgl"] }
 cfg-if = "1.0.0"
+getrandom = { version = "0.2.14", features = ["js"] }

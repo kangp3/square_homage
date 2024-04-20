@@ -1,0 +1,14 @@
+{
+  "name": "square_homage",
+  "version": "0.1.0",
+  "files": [
+    "square_homage_bg.wasm",
+    "square_homage.js",
+    "square_homage.d.ts"
+  ],
+  "module": "square_homage.js",
+  "types": "square_homage.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

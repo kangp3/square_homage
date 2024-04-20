@@ -1,4 +1,5 @@
 use std::iter;
+use rand::Rng;
 use wgpu::util::DeviceExt;
 use winit::{
     event::*,
@@ -54,6 +55,8 @@ pub async fn run() {
             let size = window.inner_size();
         }
     }
+    let aspect_ratio_recip = size.height as f32 / size.width as f32;
+    debug!("aspect ratio: {}", aspect_ratio_recip);
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
@@ -136,42 +139,51 @@ pub async fn run() {
     // lib.rs
 
     // lib.rs
-    const VERTICES: &[Vertex] = &[
-        Vertex {
-            position: [-0.0868241, 0.49240386, 0.0],
-            color: [0.5, 0.0, 0.5],
-        }, // A
-        Vertex {
-            position: [-0.49513406, 0.06958647, 0.0],
-            color: [0.5, 0.0, 0.5],
-        }, // B
-        Vertex {
-            position: [-0.21918549, -0.44939706, 0.0],
-            color: [0.5, 0.0, 0.5],
-        }, // C
-        Vertex {
-            position: [0.35966998, -0.3473291, 0.0],
-            color: [0.5, 0.0, 0.5],
-        }, // D
-        Vertex {
-            position: [0.44147372, 0.2347359, 0.0],
-            color: [0.5, 0.0, 0.5],
-        }, // E
-    ];
+    let mut rng = rand::thread_rng();
 
-    const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4];
+    let size_step = 0.1835;
+    let pos_step = 0.0918;
+    let mut vertices = vec![];
+    let mut indices: Vec<u16> = vec![];
+    for i in 0..4 {
+        let side_len = 0.9 - i as f32 * size_step;
+        let color = [rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>()];
+        vertices.push(Vertex{
+            position: [-side_len * aspect_ratio_recip, side_len - pos_step * i as f32, size_step * i as f32],
+            color,
+        });
+        vertices.push(Vertex{
+            position: [-side_len * aspect_ratio_recip, -side_len - pos_step * i as f32, size_step * i as f32],
+            color,
+        });
+        vertices.push(Vertex{
+            position: [side_len * aspect_ratio_recip, -side_len - pos_step * i as f32, size_step * i as f32],
+            color,
+        });
+        vertices.push(Vertex{
+            position: [side_len * aspect_ratio_recip, side_len - pos_step * i as f32, size_step * i as f32],
+            color,
+        });
+
+        indices.push(0 + 4*i);
+        indices.push(1 + 4*i);
+        indices.push(3 + 4*i);
+        indices.push(3 + 4*i);
+        indices.push(1 + 4*i);
+        indices.push(2 + 4*i);
+    }
 
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(VERTICES),
+        contents: bytemuck::cast_slice(&vertices[..]),
         usage: wgpu::BufferUsages::VERTEX,
     });
     let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(INDICES),
+        contents: bytemuck::cast_slice(&indices[..]),
         usage: wgpu::BufferUsages::INDEX,
     });
-    let num_indices = INDICES.len() as u32;
+    let num_indices = indices.len() as u32;
     let output = surface.get_current_texture().unwrap(); //could be a better name
 
     let view = output //is this the viewscreen?
@@ -238,9 +250,9 @@ pub async fn run() {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color{
-                        r: 0.8,
-                        g: 0.8,
-                        b: 0.3,
+                        r: 0.6,
+                        g: 0.6,
+                        b: 0.6,
                         a: 1.0,
                     }),
                     store: wgpu::StoreOp::Store,
