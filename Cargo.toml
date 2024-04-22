@@ -23,7 +23,7 @@ console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 wasm-bindgen = "0.2.92"
 wasm-bindgen-futures = "0.4.42"
-web-sys = { version = "0.3.69", features = ["Document", "Window", "Element"] }
+web-sys = { version = "0.3.69", features = ["Document", "Window", "Element", "UrlSearchParams", "Location"] }
 wgpu = { version = "0.19.3", features = ["webgl"] }
 cfg-if = "1.0.0"
 getrandom = { version = "0.2.14", features = ["js"] }

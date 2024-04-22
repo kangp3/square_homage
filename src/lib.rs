@@ -139,38 +139,55 @@ pub async fn run() {
             }
         }
     }
-    // These  consts definately will have to get split out somewhere. Too many magic numbers here.
-    // lib.rs
 
-    // lib.rs
+    let mut spice = 0;
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            let loc = web_sys::window().unwrap().location();
+            let search = loc.search().unwrap();
+            let query_params = web_sys::UrlSearchParams::new_with_str(&search)
+                .unwrap();
+            if let Some(spice_q) = query_params.get("spice") {
+                if let Ok(spice_i) = spice_q.parse::<i32>() {
+                    spice = spice_i;
+                }
+            }
+        }
+    }
+
     let mut rng = rand::thread_rng();
+
+    let gradient_thresh = 1.0 - 0.25 * spice as f32;
 
     let size_step = 0.1835;
     let pos_step = 0.0918;
     let mut vertices = vec![];
     let mut indices: Vec<u16> = vec![];
     for i in 0..4 {
+        let should_gradient = gradient_thresh <= 0.0 || rng.gen::<f32>() > gradient_thresh;
+        debug!("SHOULD GRADIENT: {should_gradient}, {gradient_thresh}");
+
         let i_f32 = i as f32;
         let side_len = 0.9 - i_f32 * size_step;
         let height = if is_wider { side_len } else { side_len * aspect_ratio_recip };
         let width = if is_wider { side_len * aspect_ratio_recip } else { side_len };
         let offset = if is_wider { pos_step * i_f32 } else { pos_step * i_f32 * aspect_ratio_recip };
-        let color = [rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>()];
+        let color = rand_color(&mut rng);
         vertices.push(Vertex{
             position: [-width, height - offset, size_step * i_f32],
-            color,
+            color: if should_gradient { rand_color(&mut rng) } else { color },
         });
         vertices.push(Vertex{
             position: [-width, -height - offset, size_step * i_f32],
-            color,
+            color: if should_gradient { rand_color(&mut rng) } else { color },
         });
         vertices.push(Vertex{
             position: [width, -height - offset, size_step * i_f32],
-            color,
+            color: if should_gradient { rand_color(&mut rng) } else { color },
         });
         vertices.push(Vertex{
             position: [width, height - offset, size_step * i_f32],
-            color,
+            color: if should_gradient { rand_color(&mut rng) } else { color },
         });
 
         indices.push(0 + 4*i);
@@ -283,6 +300,10 @@ pub async fn run() {
     output.present();
 
     let _ = event_loop.run(move |event, window| handle_event(event, window));
+}
+
+fn rand_color(rng: &mut rand::rngs::ThreadRng) -> [f32; 3] {
+    [rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>()]
 }
 
 fn handle_event(event: Event<()>, window: &EventLoopWindowTarget<()>) {
