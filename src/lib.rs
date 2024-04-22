@@ -257,10 +257,13 @@ pub async fn run() {
                 view: &view,
                 resolve_target: None,
                 ops: wgpu::Operations {
+                    // TODO(peter): Figure out how to actually get the canvas to load with an alpha
+                    // channel, or potentially add another set of vertices just to draw a
+                    // transparent layer on the background.
                     load: wgpu::LoadOp::Clear(wgpu::Color{
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
+                        r: 0.8,
+                        g: 0.8,
+                        b: 0.8,
                         a: 0.0,
                     }),
                     store: wgpu::StoreOp::Store,
