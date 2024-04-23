@@ -1,0 +1,1 @@
+- Stop canvas from capturing my keyboard events (can't C-R!!)

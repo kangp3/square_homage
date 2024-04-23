@@ -55,12 +55,6 @@ pub async fn run() {
             let size = window.inner_size();
         }
     }
-    let is_wider = size.width > size.height;
-    let aspect_ratio_recip = if is_wider {
-        size.height as f32 / size.width as f32
-    } else {
-        size.width as f32 / size.height as f32
-    };
 
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
@@ -165,28 +159,28 @@ pub async fn run() {
     let mut indices: Vec<u16> = vec![];
     for i in 0..4 {
         let should_gradient = gradient_thresh <= 0.0 || rng.gen::<f32>() > gradient_thresh;
-        debug!("SHOULD GRADIENT: {should_gradient}, {gradient_thresh}");
 
         let i_f32 = i as f32;
         let side_len = 0.9 - i_f32 * size_step;
-        let height = if is_wider { side_len } else { side_len * aspect_ratio_recip };
-        let width = if is_wider { side_len * aspect_ratio_recip } else { side_len };
-        let offset = if is_wider { pos_step * i_f32 } else { pos_step * i_f32 * aspect_ratio_recip };
+        let offset = pos_step * i_f32;
+        // let height = if is_wider { side_len } else { side_len * aspect_ratio_recip };
+        // let width = if is_wider { side_len * aspect_ratio_recip } else { side_len };
+        // let offset = if is_wider { pos_step * i_f32 } else { pos_step * i_f32 * aspect_ratio_recip };
         let color = rand_color(&mut rng);
         vertices.push(Vertex{
-            position: [-width, height - offset, size_step * i_f32],
+            position: [-side_len, side_len - offset, size_step * i_f32],
             color: if should_gradient { rand_color(&mut rng) } else { color },
         });
         vertices.push(Vertex{
-            position: [-width, -height - offset, size_step * i_f32],
+            position: [-side_len, -side_len - offset, size_step * i_f32],
             color: if should_gradient { rand_color(&mut rng) } else { color },
         });
         vertices.push(Vertex{
-            position: [width, -height - offset, size_step * i_f32],
+            position: [side_len, -side_len - offset, size_step * i_f32],
             color: if should_gradient { rand_color(&mut rng) } else { color },
         });
         vertices.push(Vertex{
-            position: [width, height - offset, size_step * i_f32],
+            position: [side_len, side_len - offset, size_step * i_f32],
             color: if should_gradient { rand_color(&mut rng) } else { color },
         });
 
@@ -215,11 +209,50 @@ pub async fn run() {
         .texture
         .create_view(&wgpu::TextureViewDescriptor::default());
 
+    let ar_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Aspect ratio uniform Buffer"),
+        size: std::mem::size_of::<f32>() as u64 * 4,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    let ar_uniform_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+        label: Some("AR Uniform BG layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry{
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
+    });
+    let ar_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+        label: Some("Aspect ratio uniform bind group"),
+        layout: &ar_uniform_bg_layout,
+        entries: &[wgpu::BindGroupEntry{
+            binding: 0,
+            resource: wgpu::BindingResource::Buffer(
+                wgpu::BufferBinding{
+                    buffer: &ar_uniform_buffer,
+                    offset: 0,
+                    size: None,
+                },
+            ),
+        }],
+    });
+    queue.write_buffer(&ar_uniform_buffer, 0, bytemuck::cast_slice(&[size.width as f32, size.height as f32, size.width as f32, size.height as f32]));
+
     let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl")); //TODO: Break this string out to be called by main
 
     let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Render Pipeline Layout"),
-        bind_group_layouts: &[],
+        bind_group_layouts: &[
+            &ar_uniform_bg_layout,
+        ],
         push_constant_ranges: &[],
     });
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -291,6 +324,7 @@ pub async fn run() {
             timestamp_writes: None,
         });
         render_pass.set_pipeline(&render_pipeline);
+        render_pass.set_bind_group(0, &ar_uniform_bind_group, &[]);
         render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
         render_pass.draw_indexed(0..num_indices, 0, 0..1); // 2.
