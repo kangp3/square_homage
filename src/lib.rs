@@ -163,25 +163,22 @@ pub async fn run() {
         let i_f32 = i as f32;
         let side_len = 0.9 - i_f32 * size_step;
         let offset = pos_step * i_f32;
-        // let height = if is_wider { side_len } else { side_len * aspect_ratio_recip };
-        // let width = if is_wider { side_len * aspect_ratio_recip } else { side_len };
-        // let offset = if is_wider { pos_step * i_f32 } else { pos_step * i_f32 * aspect_ratio_recip };
         let color = rand_color(&mut rng);
         vertices.push(Vertex{
             position: [-side_len, side_len - offset, size_step * i_f32],
-            color: if should_gradient { rand_color(&mut rng) } else { color },
+            color: if should_gradient { rand_color_saturated(&mut rng) } else { color },
         });
         vertices.push(Vertex{
             position: [-side_len, -side_len - offset, size_step * i_f32],
-            color: if should_gradient { rand_color(&mut rng) } else { color },
+            color: if should_gradient { rand_color_saturated(&mut rng) } else { color },
         });
         vertices.push(Vertex{
             position: [side_len, -side_len - offset, size_step * i_f32],
-            color: if should_gradient { rand_color(&mut rng) } else { color },
+            color: if should_gradient { rand_color_saturated(&mut rng) } else { color },
         });
         vertices.push(Vertex{
             position: [side_len, side_len - offset, size_step * i_f32],
-            color: if should_gradient { rand_color(&mut rng) } else { color },
+            color: if should_gradient { rand_color_saturated(&mut rng) } else { color },
         });
 
         indices.push(0 + 4*i);
@@ -338,6 +335,11 @@ pub async fn run() {
 
 fn rand_color(rng: &mut rand::rngs::ThreadRng) -> [f32; 3] {
     [rng.gen::<f32>(), rng.gen::<f32>(), rng.gen::<f32>()]
+}
+
+fn rand_color_saturated(rng: &mut rand::rngs::ThreadRng) -> [f32; 3] {
+    let (r, g, b) = hsluv::hsluv_to_rgb(rng.gen::<f64>()*360.0, 100.0, 50.0);
+    [r as f32, g as f32, b as f32]
 }
 
 fn handle_event(event: Event<()>, window: &EventLoopWindowTarget<()>) {
