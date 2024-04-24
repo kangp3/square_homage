@@ -1,4 +1,5 @@
 use std::iter;
+use colorsys::{Hsl, Rgb};
 use rand::Rng;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -338,8 +339,9 @@ fn rand_color(rng: &mut rand::rngs::ThreadRng) -> [f32; 3] {
 }
 
 fn rand_color_saturated(rng: &mut rand::rngs::ThreadRng) -> [f32; 3] {
-    let (r, g, b) = hsluv::hsluv_to_rgb(rng.gen::<f64>()*360.0, 100.0, 50.0);
-    [r as f32, g as f32, b as f32]
+    let rgb: Rgb = Hsl::new(rng.gen::<f64>()*360.0, 100.0, 40.0, None).as_ref().into();
+    let (r, g, b): (f32, f32, f32) = rgb.as_ref().into();
+    [r/255.0, g/255.0, b/255.0]
 }
 
 fn handle_event(event: Event<()>, window: &EventLoopWindowTarget<()>) {
