@@ -28,3 +28,4 @@ web-sys = { version = "0.3.69", features = ["Document", "Window", "Element", "Ur
 wgpu = { version = "0.19.3", features = ["webgl"] }
 cfg-if = "1.0.0"
 getrandom = { version = "0.2.14", features = ["js"] }
+chrono = { version = "0.4.38", features = ["wasmbind"] }

@@ -1,4 +1,5 @@
 use std::iter;
+use std::time::{SystemTime, UNIX_EPOCH};
 use colorsys::{Hsl, Rgb};
 use rand::Rng;
 use wgpu::util::DeviceExt;
@@ -11,6 +12,13 @@ use winit::{
 use log::debug;
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
+
+#[repr(C)]
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct MyUniform {
+    window_dims: [f32; 2],
+    elapsed: [f32; 2],
+}
 
 #[cfg_attr(target_arch="wasm32", wasm_bindgen(start))]
 pub async fn run() {
@@ -26,7 +34,7 @@ pub async fn run() {
     //BIG TODO: Custom error handling
 
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = &WindowBuilder::new().build(&event_loop).unwrap();
 
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "wasm32")] {
@@ -207,14 +215,14 @@ pub async fn run() {
         .texture
         .create_view(&wgpu::TextureViewDescriptor::default());
 
-    let ar_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Aspect ratio uniform Buffer"),
+    let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("uniform Buffer"),
         size: std::mem::size_of::<f32>() as u64 * 4,
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    let ar_uniform_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
-        label: Some("AR Uniform BG layout"),
+    let uniform_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+        label: Some("Uniform BG layout"),
         entries: &[
             wgpu::BindGroupLayoutEntry{
                 binding: 0,
@@ -228,28 +236,35 @@ pub async fn run() {
             },
         ],
     });
-    let ar_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
-        label: Some("Aspect ratio uniform bind group"),
-        layout: &ar_uniform_bg_layout,
+    let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+        label: Some("uniform bind group"),
+        layout: &uniform_bg_layout,
         entries: &[wgpu::BindGroupEntry{
             binding: 0,
             resource: wgpu::BindingResource::Buffer(
                 wgpu::BufferBinding{
-                    buffer: &ar_uniform_buffer,
+                    buffer: &uniform_buffer,
                     offset: 0,
                     size: None,
                 },
             ),
         }],
     });
-    queue.write_buffer(&ar_uniform_buffer, 0, bytemuck::cast_slice(&[size.width as f32, size.height as f32, size.width as f32, size.height as f32]));
+    queue.write_buffer(
+        &uniform_buffer,
+        0,
+        bytemuck::cast_slice(&[MyUniform{
+            window_dims: [size.width as f32, size.height as f32],
+            elapsed: [0.0, 0.0],
+        }]),
+    );
 
     let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl")); //TODO: Break this string out to be called by main
 
     let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Render Pipeline Layout"),
         bind_group_layouts: &[
-            &ar_uniform_bg_layout,
+            &uniform_bg_layout,
         ],
         push_constant_ranges: &[],
     });
@@ -322,7 +337,7 @@ pub async fn run() {
             timestamp_writes: None,
         });
         render_pass.set_pipeline(&render_pipeline);
-        render_pass.set_bind_group(0, &ar_uniform_bind_group, &[]);
+        render_pass.set_bind_group(0, &uniform_bind_group, &[]);
         render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
         render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
         render_pass.draw_indexed(0..num_indices, 0, 0..1); // 2.
@@ -331,7 +346,74 @@ pub async fn run() {
     queue.submit(iter::once(encoder.finish()));
     output.present();
 
-    let _ = event_loop.run(move |event, window| handle_event(event, window));
+    let start_time = get_time_millis();
+    let _ = event_loop.run(move |event, window_target| {
+        match event {
+            Event::WindowEvent { event: ref window_event, window_id: _ } => match window_event {
+                WindowEvent::CloseRequested => {
+                    window_target.exit();
+                }
+                WindowEvent::RedrawRequested => {
+                    debug!("REDRAW HAS BEEN REQUESTED TKTKTKTKTKKTKTKTKTKTKTKTKTKKTKTKTKTKTKTKTKTKTKKTKTKTKTKTKTKTKTKTKKTKTKT");
+                    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("Render Encoder"),
+                    });
+                    let elapsed = get_time_millis() - start_time;
+                    queue.write_buffer(
+                        &uniform_buffer,
+                        0,
+                        bytemuck::cast_slice(&[MyUniform{
+                            window_dims: [size.width as f32, size.height as f32],
+                            elapsed: [elapsed as f32, elapsed as f32],
+                        }]),
+                    );
+
+                    let output = surface.get_current_texture().unwrap(); //could be a better name
+
+                    let view = output //is this the viewscreen?
+                        .texture
+                        .create_view(&wgpu::TextureViewDescriptor::default());
+                    {
+                        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Render Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view: &view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    // TODO(peter): Figure out how to actually get the canvas to load with an alpha
+                                    // channel, or potentially add another set of vertices just to draw a
+                                    // transparent layer on the background.
+                                    load: wgpu::LoadOp::Clear(wgpu::Color{
+                                        r: 0.8,
+                                        g: 0.8,
+                                        b: 0.8,
+                                        a: 0.0,
+                                    }),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            depth_stencil_attachment: None,
+                            occlusion_query_set: None,
+                            timestamp_writes: None,
+                        });
+
+                        render_pass.set_pipeline(&render_pipeline);
+                        render_pass.set_bind_group(0, &uniform_bind_group, &[]);
+                        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+                        render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
+                        render_pass.draw_indexed(0..num_indices, 0, 0..1); // 2.
+                    }
+
+                    queue.submit(iter::once(encoder.finish()));
+                    output.present();
+
+                    window.request_redraw();
+                }
+                _ => {}
+            }
+            _ => {}
+        };
+    });
 }
 
 fn rand_color(rng: &mut rand::rngs::ThreadRng) -> [f32; 3] {
@@ -344,17 +426,13 @@ fn rand_color_saturated(rng: &mut rand::rngs::ThreadRng) -> [f32; 3] {
     [r/255.0, g/255.0, b/255.0]
 }
 
-fn handle_event(event: Event<()>, window: &EventLoopWindowTarget<()>) {
-    match event {
-        Event::WindowEvent {
-            event: ref window_event,
-            window_id: _,
-        } => match window_event {
-            WindowEvent::CloseRequested => {
-                window.exit();
-            }
-            _ => {}
-        },
-        _ => {}
-    };
+fn get_time_millis() -> i64 {
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            use chrono::Utc;
+            Utc::now().timestamp_millis()
+        } else {
+            SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as i64
+        }
+    }
 }

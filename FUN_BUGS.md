@@ -1,3 +1,10 @@
+- 4/24: Trying to get a timestamp so that I can track the elapsed time and in the
+    browser was getting errors that Rust's time builtins aren't supported in WASM.
+    This seems to be because wasm-unknown-unknown makes no assumptions about the
+    existence of an OS, and Rust's time builtin relies on an OS. There are some
+    ways around this including a crate called `chronos` which allows for binding
+    to the JS time implementations, but going to explore the timestamp write
+    options of the render pass.
 - 4/19: Drawing the nested squares led to triangles and strange behavior. This was
     because the index buffer was set up to consume elements of size u16, and in
     refactoring the index buffer to generate from the list I had inadvertently
