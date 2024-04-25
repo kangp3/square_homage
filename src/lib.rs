@@ -1,11 +1,10 @@
 use std::iter;
-use std::time::{SystemTime, UNIX_EPOCH};
 use colorsys::{Hsl, Rgb};
 use rand::Rng;
 use wgpu::util::DeviceExt;
 use winit::{
     event::*,
-    event_loop::{EventLoop, EventLoopWindowTarget},
+    event_loop::EventLoop,
     window::WindowBuilder,
 };
 #[allow(unused_imports)]
@@ -25,7 +24,7 @@ pub async fn run() {
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "wasm32")] {
             std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-            console_log::init_with_level(log::Level::Debug).expect("Couldn't initialize logger");
+            console_log::init_with_level(log::Level::Warn).expect("Couldn't initialize logger");
         } else {
             env_logger::init();
         }
@@ -354,7 +353,6 @@ pub async fn run() {
                     window_target.exit();
                 }
                 WindowEvent::RedrawRequested => {
-                    debug!("REDRAW HAS BEEN REQUESTED TKTKTKTKTKKTKTKTKTKTKTKTKTKKTKTKTKTKTKTKTKTKTKKTKTKTKTKTKTKTKTKTKKTKTKT");
                     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                         label: Some("Render Encoder"),
                     });
@@ -432,6 +430,7 @@ fn get_time_millis() -> i64 {
             use chrono::Utc;
             Utc::now().timestamp_millis()
         } else {
+            use std::time::{SystemTime, UNIX_EPOCH};
             SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as i64
         }
     }

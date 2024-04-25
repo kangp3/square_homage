@@ -1,3 +1,8 @@
+- 4/25: Framerate was real stuttery. I was wondering if this was something I had
+    done wrong with rounding and f32's and misordered divides/multiplies but it
+    was a problem with the framerate itself! It turns out I had been working on
+    and pushing the project with a log level of debug, so we were wasting a ton of
+    cycles on printing crap to the console.
 - 4/24: Trying to get a timestamp so that I can track the elapsed time and in the
     browser was getting errors that Rust's time builtins aren't supported in WASM.
     This seems to be because wasm-unknown-unknown makes no assumptions about the
