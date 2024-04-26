@@ -36,8 +36,10 @@ jobs:
     - name: Install wasm-pack
       run: cargo install wasm-pack
 
-    - name: Build
-      run: wasm-pack build --target=web
+    - name: Build artifact dir
+      run: |
+        wasm-pack build --target=web --out-dir=artifact/pkg
+        cp index.html artifact/index.html
 
     - name: Cache Cargo
       id: cache-rust-deps
@@ -53,17 +55,11 @@ jobs:
         path: target
         key: compilation-cache
 
-    - name: Tar up the package
-      id: tar-it-up
-      run: tar -cvf artifact.tar pkg index.html
-
     - name: Upload artifact
       id: upload-artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-pages-artifact@v3
       with:
-        name: github-pages
-        path: artifact.tar
-        if-no-files-found: error
+        path: artifact
 
     - name: Deploy this sucker
       id: deployment
