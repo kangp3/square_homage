@@ -41,14 +41,14 @@ jobs:
 
     - name: Tar up the package
       id: tar-it-up
-      run: tar -czvf pkg.tar.gz pkg index.html
+      run: tar -czvf github-pages pkg index.html
 
     - name: Upload artifact
       id: upload-artifact
       uses: actions/upload-artifact@v4
       with:
         name: square_homage
-        path: pkg.tar.gz
+        path: github-pages
         if-no-files-found: error
 
     - name: Deploy this sucker
