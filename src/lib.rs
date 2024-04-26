@@ -1,4 +1,5 @@
 use std::iter;
+use std::str::FromStr;
 use colorsys::{Hsl, Rgb};
 use rand::Rng;
 use wgpu::util::DeviceExt;
@@ -8,7 +9,7 @@ use winit::{
     window::WindowBuilder,
 };
 #[allow(unused_imports)]
-use log::debug;
+use log::{Level, debug};
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -24,7 +25,9 @@ pub async fn run() {
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "wasm32")] {
             std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-            console_log::init_with_level(log::Level::Warn).expect("Couldn't initialize logger");
+            let log_level_str = option_env!("LOG_LEVEL").unwrap_or("debug");
+            let log_level = Level::from_str(&log_level_str).unwrap();
+            console_log::init_with_level(log_level).expect("Couldn't initialize logger");
         } else {
             env_logger::init();
         }
