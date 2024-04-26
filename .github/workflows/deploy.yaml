@@ -61,12 +61,10 @@ jobs:
       id: upload-artifact
       uses: actions/upload-artifact@v4
       with:
-        name: square_homage
+        name: github-pages
         path: artifact.tar
         if-no-files-found: error
 
     - name: Deploy this sucker
       id: deployment
       uses: actions/deploy-pages@v4
-      with:
-        artifact_name: square_homage
