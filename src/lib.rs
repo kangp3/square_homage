@@ -348,66 +348,63 @@ pub async fn run() {
     let start_time = get_time_millis();
     let _ = event_loop.run(move |event, window_target| {
         match event {
-            Event::WindowEvent { event: ref window_event, window_id: _ } => match window_event {
-                WindowEvent::CloseRequested => {
-                    window_target.exit();
-                }
-                WindowEvent::RedrawRequested => {
-                    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("Render Encoder"),
+            Event::WindowEvent { event: WindowEvent::CloseRequested, window_id: _ } => {
+                window_target.exit();
+            }
+            Event::WindowEvent { event: WindowEvent::RedrawRequested, window_id: _ } => {
+                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
+                let elapsed = get_time_millis() - start_time;
+                queue.write_buffer(
+                    &uniform_buffer,
+                    0,
+                    bytemuck::cast_slice(&[MyUniform{
+                        window_dims: [size.width as f32, size.height as f32],
+                        elapsed: [elapsed as f32, elapsed as f32],
+                    }]),
+                );
+
+                let output = surface.get_current_texture().unwrap(); //could be a better name
+
+                let view = output //is this the viewscreen?
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+                {
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                // TODO(peter): Figure out how to actually get the canvas to load with an alpha
+                                // channel, or potentially add another set of vertices just to draw a
+                                // transparent layer on the background.
+                                load: wgpu::LoadOp::Clear(wgpu::Color{
+                                    r: 0.8,
+                                    g: 0.8,
+                                    b: 0.8,
+                                    a: 0.0,
+                                }),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
                     });
-                    let elapsed = get_time_millis() - start_time;
-                    queue.write_buffer(
-                        &uniform_buffer,
-                        0,
-                        bytemuck::cast_slice(&[MyUniform{
-                            window_dims: [size.width as f32, size.height as f32],
-                            elapsed: [elapsed as f32, elapsed as f32],
-                        }]),
-                    );
 
-                    let output = surface.get_current_texture().unwrap(); //could be a better name
-
-                    let view = output //is this the viewscreen?
-                        .texture
-                        .create_view(&wgpu::TextureViewDescriptor::default());
-                    {
-                        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: Some("Render Pass"),
-                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                view: &view,
-                                resolve_target: None,
-                                ops: wgpu::Operations {
-                                    // TODO(peter): Figure out how to actually get the canvas to load with an alpha
-                                    // channel, or potentially add another set of vertices just to draw a
-                                    // transparent layer on the background.
-                                    load: wgpu::LoadOp::Clear(wgpu::Color{
-                                        r: 0.8,
-                                        g: 0.8,
-                                        b: 0.8,
-                                        a: 0.0,
-                                    }),
-                                    store: wgpu::StoreOp::Store,
-                                },
-                            })],
-                            depth_stencil_attachment: None,
-                            occlusion_query_set: None,
-                            timestamp_writes: None,
-                        });
-
-                        render_pass.set_pipeline(&render_pipeline);
-                        render_pass.set_bind_group(0, &uniform_bind_group, &[]);
-                        render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-                        render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
-                        render_pass.draw_indexed(0..num_indices, 0, 0..1); // 2.
-                    }
-
-                    queue.submit(iter::once(encoder.finish()));
-                    output.present();
-
-                    window.request_redraw();
+                    render_pass.set_pipeline(&render_pipeline);
+                    render_pass.set_bind_group(0, &uniform_bind_group, &[]);
+                    render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+                    render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
+                    render_pass.draw_indexed(0..num_indices, 0, 0..1); // 2.
                 }
-                _ => {}
+
+                queue.submit(iter::once(encoder.finish()));
+                output.present();
+
+                window.request_redraw();
             }
             _ => {}
         };
