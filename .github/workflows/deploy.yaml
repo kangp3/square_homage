@@ -19,12 +19,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Restore Rust deps cache
-      id: rust-deps-restore
+    - name: Restore Cargo cache
+      id: cargo-restore
       uses: actions/cache/restore@v4
       with:
         path: ~/.cargo
-        key: rust-deps-cache
+        key: cargo-cache
+
+    - name: Restore compilation cache
+      id: compilation-cache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: target
+        key: compilation-cache
 
     - name: Install wasm-pack
       run: cargo install wasm-pack
@@ -32,16 +39,23 @@ jobs:
     - name: Build
       run: wasm-pack build --target=web
 
-    - name: Cache Rust dependencies
+    - name: Cache Cargo
       id: cache-rust-deps
       uses: actions/cache/save@v4
       with:
         path: ~/.cargo
-        key: rust-deps-cache
+        key: cargo-cache
+
+    - name: Cache compilation
+      id: cache-compilation
+      uses: actions/cache/save@v4
+      with:
+        path: target
+        key: compilation-cache
 
     - name: Tar up the package
       id: tar-it-up
-      run: tar -cvf github-pages pkg index.html
+      run: tar --dereference --hard-dereference -cvf github-pages pkg index.html
 
     - name: Upload artifact
       id: upload-artifact
