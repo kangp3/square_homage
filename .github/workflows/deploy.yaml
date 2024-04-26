@@ -41,7 +41,7 @@ jobs:
 
     - name: Tar up the package
       id: tar-it-up
-      run: tar -czvf github-pages pkg index.html
+      run: tar -cvf github-pages pkg index.html
 
     - name: Upload artifact
       id: upload-artifact
