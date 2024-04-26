@@ -42,9 +42,9 @@ jobs:
       id: upload-artifact
       uses: actions/upload-artifact@v4
       with:
-	name: square_homage
-	path: pkg.tar.gz
-	if-no-files-found: error
+        name: square_homage
+        path: pkg.tar.gz
+        if-no-files-found: error
 
     - name: Deploy this sucker
       id: deployment
