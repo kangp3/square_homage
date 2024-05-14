@@ -146,6 +146,7 @@ pub async fn run() {
     }
 
     let mut spice = 0;
+    let mut bloop = 0;
     cfg_if::cfg_if! {
         if #[cfg(target_arch = "wasm32")] {
             let loc = web_sys::window().unwrap().location();
@@ -155,6 +156,11 @@ pub async fn run() {
             if let Some(spice_q) = query_params.get("spice") {
                 if let Ok(spice_i) = spice_q.parse::<i32>() {
                     spice = spice_i;
+                }
+            }
+            if let Some(bloop_q) = query_params.get("bloop") {
+                if let Ok(bloop_i) = bloop_q.parse::<i32>() {
+                    bloop = bloop_i;
                 }
             }
         }
@@ -270,13 +276,14 @@ pub async fn run() {
         ],
         push_constant_ranges: &[],
     });
+
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         //copy pasted from learnWGPU. This is verbose
         label: Some("Render Pipeline"),
         layout: Some(&render_pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader,
-            entry_point: "vs_main",
+            entry_point: if bloop == 0 { "vs_main" } else { "vs_main_bloop" },
             buffers: &[Vertex::desc()],
         },
         fragment: Some(wgpu::FragmentState {
