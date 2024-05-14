@@ -73,8 +73,15 @@ fn world_to_clip_mat(win_w: f32, win_h: f32) -> mat3x3<f32> {
 }
 
 // Fragment shader
-
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(in.color, 1.0);
+    let color_offset = vec3<f32>(
+        0.1*sin(my_uniform.elapsed[0]/200.),
+        0.1*cos(my_uniform.elapsed[0]/300.),
+        0.1*sin(my_uniform.elapsed[0]/420.),
+    );
+    let offset_color_raw = in.color + color_offset;
+    let low = vec3<f32>(0., 0., 0.);
+    let high = vec3<f32>(1., 1., 1.);
+    return vec4<f32>(smoothstep(low, high, offset_color_raw), 1.0);
 }
