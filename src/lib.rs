@@ -13,11 +13,12 @@ use log::{Level, debug};
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
-#[repr(C)]
+#[repr(C, align(16))]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct MyUniform {
     window_dims: [f32; 2],
-    elapsed: [f32; 2],
+    elapsed: f32,
+    _pad: u32,
 }
 
 #[cfg_attr(target_arch="wasm32", wasm_bindgen(start))]
@@ -263,7 +264,8 @@ pub async fn run() {
         0,
         bytemuck::cast_slice(&[MyUniform{
             window_dims: [size.width as f32, size.height as f32],
-            elapsed: [0.0, 0.0],
+            elapsed: 0.0,
+            _pad: 0,
         }]),
     );
 
@@ -412,7 +414,8 @@ fn fun_name(
                 0,
                 bytemuck::cast_slice(&[MyUniform{
                     window_dims: [size.width as f32, size.height as f32],
-                    elapsed: [elapsed as f32, elapsed as f32],
+                    elapsed: elapsed as f32,
+                    _pad: 0,
                 }]),
             );
 

@@ -12,7 +12,7 @@ struct VertexOutput {
 
 struct MyUniform {
     window_dims: vec2<f32>,
-    elapsed: vec2<f32>,
+    elapsed: f32,
 }
 @group(0) @binding(0) var<uniform> my_uniform: MyUniform;
 
@@ -38,7 +38,7 @@ fn vs_main_bloop(
 ) -> VertexOutput {
     let w = my_uniform.window_dims[0];
     let h = my_uniform.window_dims[1];
-    let scale_offset = 0.05*sin(my_uniform.elapsed[0]/500.);
+    let scale_offset = 0.05*sin(my_uniform.elapsed/500.);
 
     var world_pos = model.position;
     var proj_matrix = world_to_clip_mat(w, h);
@@ -76,9 +76,9 @@ fn world_to_clip_mat(win_w: f32, win_h: f32) -> mat3x3<f32> {
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let color_offset = vec3<f32>(
-        0.1*sin(my_uniform.elapsed[0]/200.),
-        0.1*cos(my_uniform.elapsed[0]/300.),
-        0.1*sin(my_uniform.elapsed[0]/420.),
+        0.1*sin(my_uniform.elapsed/200.),
+        0.1*cos(my_uniform.elapsed/300.),
+        0.1*sin(my_uniform.elapsed/420.),
     );
     let offset_color_raw = in.color + color_offset;
     let low = vec3<f32>(0., 0., 0.);
