@@ -2,6 +2,7 @@ pub struct PipelineContext<'a> {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub surface: wgpu::Surface<'a>,
+    pub uniform_bg_layout: wgpu::BindGroupLayout,
     pub render_pipeline: wgpu::RenderPipeline,
     pub window: &'a winit::window::Window,
 }
@@ -30,7 +31,7 @@ impl Vertex {
 }
 
 impl<'a> PipelineContext<'a> {
-    async fn new(window: &'a winit::window::Window, shader: wgpu::ShaderModule) -> Self {
+    pub async fn new<'b>(window: &'a winit::window::Window, shader_module_descriptor: wgpu::ShaderModuleDescriptor<'b>) -> Self {
         let size: winit::dpi::PhysicalSize<u32> = window.inner_size();  // TODO(peter): May need to revisit
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -105,6 +106,8 @@ impl<'a> PipelineContext<'a> {
             push_constant_ranges: &[],
         });
 
+        let shader = device.create_shader_module(shader_module_descriptor);
+
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             //copy pasted from learnWGPU. This is verbose
             label: Some("Render Pipeline"),
@@ -154,6 +157,7 @@ impl<'a> PipelineContext<'a> {
             device,
             queue,
             surface,
+            uniform_bg_layout,
             render_pipeline,
             window,
         }
