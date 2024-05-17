@@ -13,6 +13,8 @@ use log::{Level, debug};
 #[cfg(target_arch="wasm32")]
 use wasm_bindgen::prelude::*;
 
+mod pipeline_context;
+
 #[repr(C, align(16))]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct MyUniform {
@@ -353,6 +355,13 @@ pub async fn run() {
         render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
         render_pass.draw_indexed(0..num_indices, 0, 0..1); // 2.
     }
+
+    // let pipeline_context = PipelineContext{
+    //   device: ...,
+    //   queue: ...,
+    //   surface: ...,
+    //   ...
+    // }
 
     queue.submit(iter::once(encoder.finish()));
     output.present();
