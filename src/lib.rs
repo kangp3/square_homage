@@ -72,7 +72,7 @@ pub async fn run() {
         }
     }
 
-    let pipeline_context = PipelineContext::new(window, wgpu::include_wgsl!("shader.wgsl")).await;
+    let pipeline_context = PipelineContext::new(window, wgpu::include_wgsl!("shader.wgsl"), size).await;
 
     let mut spice = 0;
     let mut bloop = 0;

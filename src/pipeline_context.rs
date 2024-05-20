@@ -1,3 +1,7 @@
+#[allow(unused_imports)]
+use log::{Level, debug};
+use winit::dpi::PhysicalSize;
+
 pub struct PipelineContext<'a> {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
@@ -31,9 +35,7 @@ impl Vertex {
 }
 
 impl<'a> PipelineContext<'a> {
-    pub async fn new<'b>(window: &'a winit::window::Window, shader_module_descriptor: wgpu::ShaderModuleDescriptor<'b>) -> Self {
-        let size: winit::dpi::PhysicalSize<u32> = window.inner_size();  // TODO(peter): May need to revisit
-
+    pub async fn new<'b>(window: &'a winit::window::Window, shader_module_descriptor: wgpu::ShaderModuleDescriptor<'b>, size: PhysicalSize<u32>) -> Self {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             ..Default::default()
@@ -81,6 +83,8 @@ impl<'a> PipelineContext<'a> {
             )
             .await
             .unwrap();
+
+        surface.configure(&device, &surface_config);
 
         let uniform_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
             label: Some("Uniform BG layout"),
