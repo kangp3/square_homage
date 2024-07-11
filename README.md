@@ -1,17 +1,17 @@
 # Homage^2
 
-This project is an exploration of Rust and Wasm by implementing a twist on [Homage to the Square]
-(https://en.wikipedia.org/wiki/Homage_to_the_Square), a Bauhaus-era series of paintings by Josef
-Albers. The original series of paintings explored color and the way colors interact and relate to
-other colors through the framework of nested squares, and in this project the goal was to do
-something similar but with fragment shaders.
+This project is an exploration of Rust and Wasm by implementing a twist on
+[Homage to the Square](https://en.wikipedia.org/wiki/Homage_to_the_Square), a Bauhaus-era series
+of paintings by Josef Albers. The original series of paintings explored color and the way colors
+interact and relate to other colors through the framework of nested squares, and in this project
+the goal was to do something similar but with fragment shaders.
 
-I used the `wgpu` library, with heavy guidance from the [Learn Wgpu]
-(https://sotrh.github.io/learn-wgpu/) tutorial. The library is used to set up a graphics pipeline,
-and the square geometries are created by passing the corner points into the vertex buffer. Colors
-are assigned per-vertex (one random RGB color per square by default), and a fragment shader
-oscillates the R, G, and B channels along different time-based sinusoids to create a glowing
-effect.
+I used the `wgpu` library, with heavy guidance from the
+[Learn Wgpu](https://sotrh.github.io/learn-wgpu/) tutorial. The library is used to set up a
+graphics pipeline, and the square geometries are created by passing the corner points into the
+vertex buffer. Colors are assigned per-vertex (one random RGB color per square by default), and a
+fragment shader oscillates the R, G, and B channels along different time-based sinusoids to
+create a glowing effect.
 
 ### Spice
 
