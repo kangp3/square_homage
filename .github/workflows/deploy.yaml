@@ -40,6 +40,7 @@ jobs:
       run: |
         wasm-pack build --target=web --out-dir=artifact/pkg
         cp index.html artifact/index.html
+        cp -r static artifact
 
     - name: Cache Cargo
       id: cache-rust-deps
