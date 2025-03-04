@@ -51,7 +51,7 @@ pub async fn run() {
                 .and_then(|doc| {
                     let dst = doc.get_element_by_id("body")?;
                     let canvas = window.canvas().unwrap();
-                    dst.append_child(&canvas).ok()?;
+                    dst.insert_before(&canvas, dst.first_child().as_ref()).ok()?;
                     Some(())
                 })
             .expect("Couldn't append canvas to document body.");
