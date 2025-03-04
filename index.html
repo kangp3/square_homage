@@ -13,6 +13,25 @@
       }
       canvas {
         background-color: #00000000;
+        position: absolute;
+      }
+      div {
+        height: 34.95vmin;
+        width: 34.95vmin;
+
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin-inline: auto;
+        margin-top: calc(50svh - 17.475vmin + 14vmin);
+        z-index: 9;
+
+        opacity: 0.5;
+      }
+      img {
+        width: 50%;
+        height: 50%;
+        padding: 25%;
       }
     </style>
   </head>
@@ -23,5 +42,8 @@
         console.log("WASM Loaded");
       });
     </script>
+    <div id="qr">
+      <img src="static/qr.svg">
+    </div>
   </body>
 </html>
